@@ -1,0 +1,35 @@
+Note on Hyper-parameter Choices
+
+The hyper-parameters for this project were chosen to align with best practices for fine-tuning large pre-trained models on a new, smaller dataset. The strategy involves a two-phase training approach, each with its own set of carefully selected parameters.
+
+1. Batch Size (BATCH_SIZE = 32)
+
+A moderate batch size of 32 was selected as a compromise between computational efficiency and model generalization.
+
+Larger batch sizes can sometimes lead to sharp, less generalizable minima, while smaller sizes provide a regularizing effect. 32 is a standard choice that fits well within the memory of most GPUs and works effectively with the data augmentation in place.
+
+2. Learning Rate (Two-Phase Approach)
+
+The learning rate is the most critical hyper-parameter in fine-tuning. We use a "gradual unfreezing" strategy with two different learning rates:
+
+Initial Head Training (INITIAL_LR = 3e-4): A relatively larger learning rate is used to train only the newly added classifier head. Since the head's weights are randomly initialized, it needs to learn quickly to adapt to the dataset's features.
+
+Full Model Fine-tuning (FINETUNE_LR = 1e-5): After the head is stable, the entire model is unfrozen. A very small learning rate is used here to make subtle adjustments to the pre-trained convolutional layers without catastrophically forgetting the valuable features learned from ImageNet.
+
+3. Epochs (Two-Phase Approach)
+
+Head Training (NUM_EPOCHS_HEAD = 5): A small number of epochs is sufficient for the classifier head to learn the basic patterns of the new dataset and for its loss to stabilize.
+
+Full Model Fine-tuning (NUM_EPOCHS_FINETUNE = 10): A longer training phase is allocated for the full model fine-tuning. This, combined with Early Stopping, allows the model enough time to converge to a good solution without overfitting.
+
+4. Optimizer (AdamW) & Weight Decay (WEIGHT_DECAY = 1e-4)
+
+AdamW is chosen over the standard Adam optimizer. It decouples weight decay from the gradient update, which often leads to better regularization and generalization.
+
+A weight_decay of 1e-4 provides a mild L2 regularization effect, penalizing large weights to prevent the model from becoming overly complex and helping to reduce overfitting.
+
+5. Learning Rate Scheduler & Early Stopping (PATIENCE = 3)
+
+A ReduceLROnPlateau scheduler monitors the validation loss and reduces the learning rate if no improvement is seen for 3 epochs. This helps the model navigate plateaus and settle into a better minimum.
+
+Early Stopping also uses a patience of 3 epochs. It halts the training process entirely if the validation loss doesn't improve, ensuring we save the best-performing model and avoid wasting computational resources.
